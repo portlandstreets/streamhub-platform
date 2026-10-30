@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: streamhub_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: streamdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - stream_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: streamhub_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - stream_network
+
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: streamhub_mediamtx
+    restart: unless-stopped
+    ports:
+      - "1935:1935"
+      - "8888:8888"
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
+    networks:
+      - stream_network
+
+  core-service:
+    build:
+      context: ./services/core
+      dockerfile: Dockerfile
+    container_name: streamhub_core
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/streamdb
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - stream_storage:/app/storage
+    depends_on:
+      - db
+      - redis
+    networks:
+      - stream_network
+
+  chat-service:
+    build:
+      context: ./services/chat
+      dockerfile: Dockerfile
+    container_name: streamhub_chat
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    networks:
+      - stream_network
+
+  ai-agent:
+    build:
+      context: ./services/ai-agent
+      dockerfile: Dockerfile
+    container_name: streamhub_ai_agent
+    restart: unless-stopped
+    volumes:
+      - ./services/ai-agent:/app
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - MODEL_NAME=openai/gpt-oss-20b
+    depends_on:
+      - redis
+    networks:
+      - stream_network
+
+  transcoder:
+    build:
+      context: ./services/transcoder
+      dockerfile: Dockerfile
+    container_name: streamhub_transcoder
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/streamdb
+    volumes:
+      - stream_storage:/app/storage
+    depends_on:
+      - mediamtx
+      - db
+    networks:
+      - stream_network
+
+volumes:
+  pgdata:
+  stream_storage:
+
+networks:
+  stream_network:
+    driver: bridge

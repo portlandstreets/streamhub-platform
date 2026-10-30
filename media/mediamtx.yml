@@ -1,0 +1,23 @@
+logLevel: info
+logDestinations: [stdout]
+
+# Протоколи
+rtmp: yes
+rtmpAddress: :1935
+
+hls: yes
+hlsAddress: :8888
+hlsAlwaysRemux: no
+hlsVariant: lowLatency
+hlsSegmentCount: 7
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms
+
+# HTTP-автентифікація через core-service
+authMethod: http
+authHTTPAddress: http://core-service:8000/api/streams/auth
+authHTTPExclude:
+  - action: read
+
+paths:
+  all_others:

@@ -1,0 +1,41 @@
+# Environment & Secrets
+.env
+.env.*
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Node / Vue frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Media storage & Live stream artifacts (дуже важливо!)
+services/core/storage/
+services/transcoder/storage/
+media/
+*.m3u8
+*.ts
+*.mp4
+*.jpg
+
+# Docker & Database volumes
+pgdata/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
